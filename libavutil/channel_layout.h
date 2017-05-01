@@ -65,6 +65,12 @@ enum AVChannel {
     AV_CHAN_SURROUND_DIRECT_LEFT,
     AV_CHAN_SURROUND_DIRECT_RIGHT,
     AV_CHAN_LOW_FREQUENCY_2,
+
+    /**
+     * Generic ambisonic component used in AVChannelLayout.u.map, following
+     * the ACN convention `k = n * (n + 1) + m`.
+     */
+    AV_CHAN_AMBISONIC = 64,
 };
 
 enum AVChannelOrder {
@@ -85,6 +91,25 @@ enum AVChannelOrder {
      * about the channels.
      */
     AV_CHANNEL_ORDER_UNSPEC,
+    /**
+     * Each channel represents a different speaker position, ordered as ACN
+     * (Ambisonic Channel Number). As such, following mathematical properties
+     * can be used to compute:
+     *
+     * @code{.unparsed}
+     *   ACN = n * (n + 1) + m
+     *   n   = floor(sqrt(k)) - 1,
+     *   m   = k - n * (n + 1) - 1.
+     * @endcode
+     *
+     * for order n and degree m; the ACN component corresponds to channel
+     * index as k = ACN + 1. Non-diegetic channels can be espressed within
+     * the associated layout map as normal enum AVChannel(s).
+     *
+     * Normalization is assumed to be SN3D (Schmidt Semi-Normalization)
+     * as defined in AmbiX format § 2.1.
+     */
+    AV_CHANNEL_ORDER_AMBISONIC,
 };
 
 
@@ -232,6 +257,11 @@ typedef struct AVChannelLayout {
          *   the AVChannel with the corresponding value: eg. when map[i] is
          *   equal to AV_CHAN_FOO, then AV_CHAN_FOO is the i-th channel in
          *   the audio data.
+         * - For AV_CHANNEL_ORDER_AMBISONIC: each element of the map is set to
+         *   AV_CHAN_AMBISONIC and follows the ACN formula for channel ordering.
+         *   In case the layout contains non-diegetic channels, they are exported
+         *   as custom ordered-channels, eg. when map[i] is equal to AV_CHAN_FOO,
+         *   then AV_CHAN_FOO is the i-th channel in the audio data.
          */
         uint8_t *map;
     } u;
@@ -401,6 +431,8 @@ void av_channel_layout_from_mask(AVChannelLayout *channel_layout, uint64_t mask)
  *  - a hexadecimal value of a channel layout (eg. "0x4")
  *  - the number of channels with default layout (eg. "5")
  *  - the number of unordered channels (eg. "4 channels")
+ *  - the ambisonic channel count and order followed by optional non-diegetic
+ *    channels (eg. "ambisonic channels 9 order 2|stereo")
  *
  * @param channel_layout input channel layout
  * @param str string describing the channel layout
@@ -488,6 +520,15 @@ int av_channel_layout_check(const AVChannelLayout *channel_layout);
  * AVERROR code if one or both are invalid.
  */
 int av_channel_layout_compare(const AVChannelLayout *chl, const AVChannelLayout *chl1);
+
+/**
+ * Initialize an AVChannelLayout structure with default values for Ambisonic
+ * audio. Map is allocated to the number of channels passed in, with each
+ * element initialized to AV_CHAN_AMBISONIC.
+ *
+ * @return 0 if successful or a negative AVERROR code in case of error.
+ */
+int av_channel_layout_ambisonic(AVChannelLayout *channel_layout, int channels);
 
 /**
  * @}
