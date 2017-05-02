@@ -407,7 +407,14 @@ static const uint64_t aac_channel_layout[] = {
 };
 #endif /* FF_API_OLD_CHANNEL_LAYOUT */
 
-static const AVChannelLayout aac_ch_layouts[16] = {
+static uint8_t ambisonic_channels[] = {
+    AV_CHAN_AMBISONIC,
+    AV_CHAN_AMBISONIC,
+    AV_CHAN_AMBISONIC,
+    AV_CHAN_AMBISONIC,
+};
+
+static const AVChannelLayout aac_ch_layouts[17] = {
     AV_CHANNEL_LAYOUT_MONO,
     AV_CHANNEL_LAYOUT_STEREO,
     AV_CHANNEL_LAYOUT_SURROUND,
@@ -418,6 +425,11 @@ static const AVChannelLayout aac_ch_layouts[16] = {
     AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK,
     AV_CHANNEL_LAYOUT_7POINT1,
 #endif
+    {
+        .order = AV_CHANNEL_ORDER_AMBISONIC,
+        .nb_channels = 4,
+        .u.map = ambisonic_channels,
+    },
     { 0 },
 };
 
